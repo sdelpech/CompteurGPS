@@ -25,10 +25,7 @@ TinyGPSPlus gps;
 #define TFT_SCLK 7 
 #define TFT_LIGHT 22
 
-#define RGB_LED_PIN 8
-
-#define IMAGE_WIDTH 72/* VOTRE_LARGEUR_IMAGE_ICI */
-#define IMAGE_HEIGHT 160
+#define RGB_LED_PIN 80
 
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
 Adafruit_NeoPixel pixels(1, RGB_LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -58,15 +55,28 @@ void setup(void) {
   Serial.println("Démarrage du module GPS...");
   
   tft.setTextColor(ST77XX_WHITE,ST77XX_BLACK);
-  setBacklightBrightness(30);
+  setBacklightBrightness(5);
 
+  drawImageFromBytes( 0,  0, 320, 172, gImage_compteur);
+  delay(3000);
+  masqueLogo();
+  tft.setTextSize(14);
+  tft.setCursor(0, 32);
+  tft.println("188");
+  tft.setCursor(240,100);
+  tft.setTextSize(3);
+  tft.println("km/h");
+  masqueVitesse();
+  delay(1000);
+  masqueUnite();
+  drawImageFromBytes( 0,  0, 320, 172, gImage_compteur);
+  delay(10000);
 }
 
 void loop() {
   while (SerialGPS.available() > 0) {
     if (gps.encode(SerialGPS.read())) {
-      if (gps.location.isValid()) {
-        setBacklightBrightness(50);
+      if (gps.location.isValid()) {  
         Serial.println(gps.speed.kmph());
         //Ajustement de la luminosité en fonction de l'heure 
         if((gps.time.hour() > 18) && (gps.time.hour()<10)){
@@ -82,26 +92,33 @@ void loop() {
             tft.setCursor(0, 32);
           }
           tft.println(vitesse_str);
+        }else{
+          masqueVitesse();
+          masqueUnite();
+          drawImageFromBytes( 0,  0, 320, 172, gImage_compteur);
+          delay(10000);
+          masqueLogo();
           tft.setTextWrap(true);
           tft.setCursor(240,100);
           tft.setTextSize(3);
           tft.println("km/h");
-        }else{
-          tft.setCursor(74, 32);
-          drawImageFromBytes( 0,  0, 320, 172, gImage_compteur);
-          delay(2000);
         }
-
-        delay(700);
       } else {
+        tft.fillScreen(ST77XX_BLACK);
+        drawImageFromBytes( 0,  0, 320, 172, gImage_compteur);
         Serial.println("Pas de données GPS valides.");
-        delay(1000);
+        delay(10000);
+        masqueLogo();
       }
     }
   }
 
   // Si le module GPS n'envoie plus de données pendant un certain temps
   if (millis() > 5000 && gps.charsProcessed() < 10) {
+    tft.fillScreen(ST77XX_BLACK);
+    drawImageFromBytes( 0,  0, 320, 172, gImage_compteur);
+    delay(10000);
+    masqueLogo();
     Serial.println("Pas de données GPS reçues, vérifiez les connexions et l'antenne.");
     // while(true); // Décommentez pour stopper le programme si aucune donnée n'est reçue
   }
@@ -142,6 +159,17 @@ void drawImageFromBytes(int16_t x, int16_t y, int16_t w, int16_t h, const unsign
   }
 }
 
+void masqueLogo(){
+  tft.fillRect(28,27,265,120,ST77XX_BLACK);
+}
+
+void masqueUnite(){
+  tft.fillRect(240,100,85,25,ST77XX_BLACK);
+}
+
+void masqueVitesse(){
+  tft.fillRect(14,32,224,98,ST77XX_BLACK);
+}
 
 void setBacklightBrightness(int brightness) {
   // 'brightness' doit être une valeur entre 0 et (2^resolution - 1)
